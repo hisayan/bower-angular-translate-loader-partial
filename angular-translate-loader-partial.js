@@ -43,11 +43,12 @@ function $translatePartialLoader() {
    * @description
    * Represents Part object to add and set parts at runtime.
    */
-  function Part(name, priority) {
+  function Part(name, priority, variables) {
     this.name = name;
     this.isActive = true;
     this.tables = {};
     this.priority = priority || 0;
+    this.variables = variables || {};
   }
 
   /**
@@ -66,7 +67,7 @@ function $translatePartialLoader() {
    */
   Part.prototype.parseUrl = function(urlTemplate, targetLang) {
     if (angular.isFunction(urlTemplate)) {
-      return urlTemplate(this.name, targetLang);
+      return urlTemplate(this.name, targetLang, this.variables);
     }
     return urlTemplate.replace(/\{part\}/g, this.name).replace(/\{lang\}/g, targetLang);
   };
@@ -165,13 +166,16 @@ function $translatePartialLoader() {
    * of the wrong type. Please, note that the `name` param has to be a
    * non-empty **string**.
    */
-  this.addPart = function(name, priority) {
+  this.addPart = function(name, priority, variables) {
     if (!isStringValid(name)) {
       throw new TypeError('Couldn\'t add part, part name has to be a string!');
     }
 
     if (!hasPart(name)) {
-      parts[name] = new Part(name, priority);
+      parts[name] = new Part(name, priority, variables);
+    } else if (JSON.stringify(parts[name].variables) !== JSON.stringify(variables)) {
+      // deletePart(name);
+      parts[name].variables = variables;
     }
     parts[name].isActive = true;
 
@@ -361,13 +365,13 @@ function $translatePartialLoader() {
      * @throws {TypeError} The method could throw a **TypeError** if you pass the param of the wrong
      * type. Please, note that the `name` param has to be a non-empty **string**.
      */
-    service.addPart = function(name, priority) {
+    service.addPart = function(name, priority, variables) {
       if (!isStringValid(name)) {
         throw new TypeError('Couldn\'t add part, first arg has to be a string');
       }
 
       if (!hasPart(name)) {
-        parts[name] = new Part(name, priority);
+        parts[name] = new Part(name, priority, variables);
         $rootScope.$emit('$translatePartialLoaderStructureChanged', name);
       } else if (!parts[name].isActive) {
         parts[name].isActive = true;
